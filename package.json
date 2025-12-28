@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.6.1",
   "type": "module",
-  "homepage": "https://vim3651.github.io/1",
+  "homepage": "https://vim3651.github.io/2",
   "engines": {
     "node": ">=22.0.0",
     "npm": ">=10.0.0"
