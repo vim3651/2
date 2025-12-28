@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Keystore files (排除 release-keystore.jks 用于统一签名)
+*.keystore
+*.jks
+!src-tauri/release-keystore.jks
+keystore.txt
+scripts/keystore/
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/WixTools/
+
+# Rust
+*.rs.bk
+Cargo.lock
+
+# Platform specific
+.DS_Store
+Thumbs.db
+
+# 忽略参考项目文档
+docs/参考项目/

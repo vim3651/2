@@ -1,0 +1,172 @@
+/**
+ * Edge-to-Edge 安全区域样式
+ * 适配透明系统栏，内容延伸到状态栏和导航栏后面
+ * 使用 EdgeToEdge 插件提供的精确安全区域值
+ */
+
+/* 
+ * 安全区域变量说明：
+ * 全局统一的安全区域变量已在 GlobalStyles.tsx 中定义：
+ * - --safe-area-top/right/bottom/left: 原生 env() 值
+ * - --safe-area-bottom-min: 最小底部值 (34px)
+ * - --safe-area-bottom-computed: 计算后的底部值 (所有页面统一使用)
+ */
+
+/* 全局容器安全区域适配 */
+.safe-area-container {
+  padding-top: var(--safe-area-top);
+  padding-right: var(--safe-area-right);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+}
+
+/* 
+ * 安全区域配置说明：
+ * - 顶部安全区域：由 themes.ts 的 MuiAppBar 全局配置 (30px)
+ * - 底部安全区域：由 SafeAreaContainer 组件统一处理
+ * 
+ * 所有设置页面应使用 SafeAreaContainer 组件包装
+ */
+
+/* 聊天输入框容器 */
+.chat-input-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  
+  /* 使用全局统一的安全区域变量 */
+  padding-bottom: var(--safe-area-bottom-computed);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+  
+  /* 背景和边框 */
+  background: var(--mui-palette-background-paper);
+  border-top: 1px solid var(--mui-palette-divider);
+  
+  box-sizing: border-box;
+}
+
+/* 状态栏安全区域适配 - 用于 AppBar 和顶部工具栏 */
+.status-bar-safe-area {
+  padding-top: var(--safe-area-top) !important;
+}
+
+/* 工具栏安全区域适配 */
+.toolbar-container {
+  padding-top: var(--safe-area-top);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+/* 抽屉/侧边栏安全区域适配 */
+.drawer-container {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+}
+
+/* 模态框安全区域适配 */
+.modal-container {
+  margin-top: var(--safe-area-top);
+  margin-bottom: var(--safe-area-bottom);
+  margin-left: var(--safe-area-left);
+  margin-right: var(--safe-area-right);
+}
+
+/* 全屏内容适配 */
+.fullscreen-content {
+  height: calc(100vh - var(--safe-area-top) - var(--safe-area-bottom));
+  height: calc(100dvh - var(--safe-area-top) - var(--safe-area-bottom));
+  margin-top: var(--safe-area-top);
+  margin-bottom: var(--safe-area-bottom);
+}
+
+/* 底部固定按钮适配 */
+.bottom-fixed-button {
+  bottom: calc(var(--safe-area-bottom) + 16px);
+  left: calc(var(--safe-area-left) + 16px);
+  right: calc(var(--safe-area-right) + 16px);
+}
+
+/* 浮动操作按钮适配 */
+.fab-container {
+  bottom: calc(var(--safe-area-bottom) + 80px);
+  right: calc(var(--safe-area-right) + 16px);
+}
+
+/* 响应式适配 */
+@media (orientation: landscape) {
+  .chat-input-container {
+    padding-bottom: max(var(--safe-area-bottom), 8px);
+  }
+}
+
+/* 特定平台适配 */
+.platform-android .chat-input-container {
+  padding-bottom: var(--chat-input-bottom-padding);
+}
+
+.platform-ios .chat-input-container {
+  padding-bottom: max(var(--safe-area-bottom), 8px);
+}
+
+/* ============================================
+   调试工具 - Edge-to-Edge 安全区域可视化
+   ============================================ */
+
+/* 调试容器 */
+.debug-safe-area {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  display: none; /* 默认隐藏 */
+}
+
+/* 顶部安全区域（红色） */
+.debug-safe-area::before {
+  content: 'Safe Area Top: ' attr(data-top);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-area-top);
+  background: rgba(255, 0, 0, 0.3);
+  border-bottom: 2px solid rgba(255, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 0 0 2px black;
+}
+
+/* 底部安全区域（绿色） */
+.debug-safe-area::after {
+  content: 'Safe Area Bottom: ' attr(data-bottom);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-area-bottom);
+  background: rgba(0, 255, 0, 0.3);
+  border-top: 2px solid rgba(0, 255, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  text-shadow: 0 0 2px black;
+}
+
+/* 启用调试模式 */
+.debug-mode .debug-safe-area,
+body[data-debug-safe-area="true"] .debug-safe-area {
+  display: block !important;
+}

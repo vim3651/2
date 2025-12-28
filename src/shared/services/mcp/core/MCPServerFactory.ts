@@ -1,0 +1,60 @@
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { getBuiltinMCPServers, isBuiltinServer, getBuiltinServerConfig } from '../../../config/builtinMCPServers';
+import { TimeServer } from '../servers/TimeServer';
+import { FetchServer } from '../servers/FetchServer';
+import { CalculatorServer } from '../servers/CalculatorServer';
+import { CalendarServer } from '../servers/CalendarServer';
+import { AlarmServer } from '../servers/AlarmServer';
+import { MetasoSearchServer } from '../servers/MetasoSearchServer';
+import { FileEditorServer } from '../servers/FileEditorServer';
+import { DexEditorServer } from '../servers/DexEditorServer';
+
+/**
+ * 创建内存 MCP 服务器
+ * 工厂函数用于创建内置的 MCP 服务器实例
+ */
+export function createInMemoryMCPServer(name: string, args: string[] = [], envs: Record<string, string> = {}): Server {
+  console.log(`[MCP] 创建内存 MCP 服务器: ${name}，参数: ${args}，环境变量: ${JSON.stringify(envs)}`);
+
+  switch (name) {
+    case '@aether/time': {
+      return new TimeServer().server;
+    }
+
+    case '@aether/fetch': {
+      return new FetchServer().server;
+    }
+
+    case '@aether/calculator': {
+      return new CalculatorServer().server;
+    }
+
+    case '@aether/calendar': {
+      return new CalendarServer().server;
+    }
+
+    case '@aether/alarm': {
+      return new AlarmServer().server;
+    }
+
+    case '@aether/metaso-search': {
+      const apiKey = envs.METASO_API_KEY || '';
+      const metasoServer = new MetasoSearchServer(apiKey);
+      return metasoServer.server;
+    }
+
+    case '@aether/file-editor': {
+      return new FileEditorServer().server;
+    }
+
+    case '@aether/dex-editor': {
+      return new DexEditorServer().server;
+    }
+
+    default:
+      throw new Error(`未知的内置 MCP 服务器: ${name}`);
+  }
+}
+
+// 导出配置文件中的函数，保持向后兼容
+export { getBuiltinMCPServers, isBuiltinServer, getBuiltinServerConfig };

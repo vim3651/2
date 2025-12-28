@@ -1,0 +1,28 @@
+{
+  "title": "Chat",
+  "sendMessage": "Send Message",
+  "inputPlaceholder": "Type a message...",
+  "thinking": "Thinking...",
+  "streaming": "Generating...",
+  "error": "An error occurred",
+  "retry": "Retry",
+  "regenerate": "Regenerate",
+  "copy": "Copy",
+  "delete": "Delete",
+  "edit": "Edit",
+  "stop": "Stop",
+  "clear": "Clear",
+  "contextSummary": {
+    "title": "Context Summary",
+    "compressedCount": "{{count}} messages condensed",
+    "tokensSaved": "Saved {{saved}} tokens ({{percent}}%)",
+    "cost": "Cost: ${{cost}}",
+    "model": "Model: {{model}}",
+    "condenseSuccess": "Condensed successfully! Saved {{saved}} tokens",
+    "condenseFailed": "Condensation failed",
+    "condenseInProgress": "Condensing context...",
+    "notEnoughMessages": "Not enough messages to condense",
+    "recentlyCondensed": "Recently condensed, please try later"
+  }
+}
+

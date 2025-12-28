@@ -1,0 +1,120 @@
+name: Initialize Tauri iOS Project
+
+on:
+  workflow_dispatch: # 手动触发
+
+jobs:
+  init-ios:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm install
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios, x86_64-apple-ios
+
+      - name: Install iOS targets
+        run: |
+          rustup target add aarch64-apple-ios
+          rustup target add x86_64-apple-ios
+          rustup target add aarch64-apple-ios-sim
+
+      - name: Check Tauri CLI version and commands
+        run: |
+          echo "=== Tauri CLI 版本 ==="
+          npx @tauri-apps/cli --version
+          echo ""
+          echo "=== 可用命令 ==="
+          npx @tauri-apps/cli --help
+          echo ""
+          echo "=== 检查是否有 iOS 命令 ==="
+          npx @tauri-apps/cli ios --help || echo "iOS 命令不可用"
+
+      - name: Initialize Tauri iOS project
+        run: |
+          echo "尝试初始化 Tauri iOS 项目..."
+          # 方法 1: 使用 npx
+          npx @tauri-apps/cli ios init || {
+            echo "方法 1 失败，尝试方法 2..."
+            # 方法 2: 使用 cargo
+            cd src-tauri && cargo tauri ios init || {
+              echo "方法 2 失败，尝试方法 3..."
+              cd ..
+              # 方法 3: 直接使用 npm script
+              npm run tauri ios init || echo "所有方法都失败了"
+            }
+          }
+
+      - name: Verify iOS project creation
+        run: |
+          echo "检查 iOS/Apple 目录..."
+          if [ -d "src-tauri/gen/apple" ]; then
+            echo "✅ Apple (iOS) 目录已创建"
+            ls -la src-tauri/gen/apple/
+            echo ""
+            echo "=== Xcode 项目文件 ==="
+            find src-tauri/gen/apple -name "*.xcodeproj" -o -name "*.xcworkspace"
+          elif [ -d "src-tauri/gen/ios" ]; then
+            echo "✅ iOS 目录已创建"
+            ls -la src-tauri/gen/ios/
+          else
+            echo "❌ iOS/Apple 目录未创建"
+            echo "列出 gen 目录内容："
+            ls -la src-tauri/gen/ || echo "gen 目录不存在"
+            exit 1
+          fi
+
+      - name: Package iOS project files
+        run: |
+          cd src-tauri/gen
+          # Tauri v2 将 iOS 项目放在 apple/ 目录
+          if [ -d "apple" ]; then
+            echo "✅ 打包 Apple (iOS) 项目..."
+            tar -czf ios-project.tar.gz apple/
+            mv ios-project.tar.gz ../../
+            echo "✅ iOS 项目已打包"
+          elif [ -d "ios" ]; then
+            echo "✅ 打包 iOS 项目..."
+            tar -czf ios-project.tar.gz ios/
+            mv ios-project.tar.gz ../../
+            echo "✅ iOS 项目已打包"
+          else
+            echo "❌ 未找到 iOS/Apple 目录"
+            exit 1
+          fi
+
+      - name: Upload iOS project as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-ios-project
+          path: ios-project.tar.gz
+          retention-days: 7
+
+      - name: Create summary
+        run: |
+          echo "## ✅ Tauri iOS 项目初始化完成" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 下载步骤：" >> $GITHUB_STEP_SUMMARY
+          echo "1. 点击上方的 Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. 下载 \`tauri-ios-project\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. 解压到项目根目录" >> $GITHUB_STEP_SUMMARY
+          echo "4. 运行: \`tar -xzf ios-project.tar.gz -C src-tauri/gen/\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📂 生成的文件：" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la src-tauri/gen/ios/ || echo "iOS 目录未生成" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

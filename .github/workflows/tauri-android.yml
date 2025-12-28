@@ -1,0 +1,131 @@
+name: Tauri Android Build (Disabled)
+
+# 已禁用 - 保留配置以备将来使用
+# 要重新启用此工作流，请删除下面的注释并恢复原始触发条件
+on:
+  # push:
+  #   branches: [ main, master ]
+  # workflow_dispatch:
+  
+  # 临时禁用所有触发条件 - 只能手动触发且需要特殊分支
+  workflow_dispatch:
+    inputs:
+      force_enable:
+        description: '强制启用构建 (输入 "FORCE_ENABLE" 启用)'
+        required: true
+        default: 'disabled'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # 只有在手动触发且输入正确的强制启用参数时才运行
+    if: github.event.inputs.force_enable == 'FORCE_ENABLE'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+      
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          shared-key: "android-rust-${{ hashFiles('**/Cargo.lock') }}"
+          cache-on-failure: true
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Gradle 缓存 - 加速增量构建
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            src-tauri/gen/android/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('src-tauri/gen/android/**/*.gradle*', 'src-tauri/gen/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Install Android NDK
+        run: |
+          echo "Installing Android NDK..."
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;26.1.10909125"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
+          echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm ci || npm install --legacy-peer-deps
+      
+      - name: Build frontend
+        run: npm run build
+      
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+      
+      - name: Setup Signing Keystore
+        run: |
+          echo "Decoding fixed keystore..."
+          cp ${{ github.workspace }}/src-tauri/release-keystore.jks ${{ github.workspace }}/release-keystore.jks
+          echo "Keystore ready"
+      
+      - name: Build Android APK (Release)
+        run: |
+          echo "=== 构建已签名的 Release APK ==="
+          echo "Keystore 路径: $TAURI_SIGNING_STORE_PATH"
+          tauri android build --apk true --split-per-abi
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_ROOT }}
+          NDK_HOME: ${{ env.NDK_HOME }}
+          # 签名配置 - 直接在 env 块中设置，确保 Gradle 可以读取
+          TAURI_SIGNING_STORE_PATH: ${{ github.workspace }}/release-keystore.jks
+          TAURI_SIGNING_STORE_PASSWORD: aetherlink2024
+          TAURI_SIGNING_KEY_ALIAS: aetherlink
+          TAURI_SIGNING_KEY_PASSWORD: aetherlink2024
+          # 兼容旧版环境变量名
+          TAURI_ANDROID_SIGNING_KEY_STORE_PATH: ${{ github.workspace }}/release-keystore.jks
+          TAURI_ANDROID_SIGNING_KEY_STORE_PASSWORD: aetherlink2024
+          TAURI_ANDROID_SIGNING_KEY_ALIAS: aetherlink
+          TAURI_ANDROID_SIGNING_KEY_PASSWORD: aetherlink2024
+      
+      - name: Find APK files
+        run: |
+          echo "Searching for APK files..."
+          find src-tauri -name "*.apk" -type f
+
+      - name: Verify APK Signing
+        run: |
+          echo "=== 验证 APK 签名状态 ==="
+          for apk in $(find src-tauri -name "*.apk" -type f); do
+            echo ""
+            echo "📦 APK: $apk"
+            # 使用 apksigner 验证签名
+            if $ANDROID_HOME/build-tools/34.0.0/apksigner verify --print-certs "$apk" 2>/dev/null; then
+              echo "✅ 已签名"
+            else
+              echo "⚠️ 未签名或签名无效"
+            fi
+          done
+
+      - name: Upload All APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks-all-architectures
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
